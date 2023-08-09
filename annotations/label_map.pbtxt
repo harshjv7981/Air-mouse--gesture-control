@@ -1,12 +1,34 @@
-item { 
-	name:'single'
-	id:1
+item {
+  id: 1
+  name: 'Buckling'
 }
-item { 
-	name:'double'
-	id:2
+
+item {
+  id: 2
+  name: 'Crack'
 }
-item { 
-	name:'pinch'
-	id:3
+
+item {
+  id: 3
+  name: 'Debris'
+}
+
+item {
+  id: 4
+  name: 'Hole'
+}
+
+item {
+  id: 5
+  name: 'Joint offset'
+}
+
+item {
+  id: 6
+  name: 'Obstacle'
+}
+
+item {
+  id: 7
+  name: 'Utility intrusion'
 }
