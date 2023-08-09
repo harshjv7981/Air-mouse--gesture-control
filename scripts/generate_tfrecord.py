@@ -1,74 +1,53 @@
+"""
+Usage:
+  # From tensorflow/models/
+  # Create train data:
+  python generate_tfrecord.py --csv_input=images/train_labels.csv --image_dir=images/train --output_path=train.record
+
+  # Create test data:
+  python generate_tfrecord.py --csv_input=images/test_labels.csv  --image_dir=images/test --output_path=test.record
+"""
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+
 import os
-import glob
-import pandas as pd
 import io
-import xml.etree.ElementTree as ET
-import argparse
-
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'    # Suppress TensorFlow logging (1)
+import pandas as pd
+import tensorflow as tf
 import tensorflow.compat.v1 as tf
+
 from PIL import Image
-from object_detection.utils import dataset_util, label_map_util
-from collections import namedtuple
+from object_detection.utils import dataset_util
+from collections import namedtuple, OrderedDict
 
-# Initiate argument parser
-parser = argparse.ArgumentParser(
-    description="Sample TensorFlow XML-to-TFRecord converter")
-parser.add_argument("-x",
-                    "--xml_dir",
-                    help="Path to the folder where the input .xml files are stored.",
-                    type=str)
-parser.add_argument("-l",
-                    "--labels_path",
-                    help="Path to the labels (.pbtxt) file.", type=str)
-parser.add_argument("-o",
-                    "--output_path",
-                    help="Path of output TFRecord (.record) file.", type=str)
-parser.add_argument("-i",
-                    "--image_dir",
-                    help="Path to the folder where the input image files are stored. "
-                         "Defaults to the same directory as XML_DIR.",
-                    type=str, default=None)
-parser.add_argument("-c",
-                    "--csv_path",
-                    help="Path of output .csv file. If none provided, then no file will be "
-                         "written.",
-                    type=str, default=None)
-
-args = parser.parse_args()
-
-if args.image_dir is None:
-    args.image_dir = args.xml_dir
-
-label_map = label_map_util.load_labelmap(args.labels_path)
-label_map_dict = label_map_util.get_label_map_dict(label_map)
-
-
-def xml_to_csv(path):
-
-    xml_list = []
-    for xml_file in glob.glob(path + '/*.xml'):
-        tree = ET.parse(xml_file)
-        root = tree.getroot()
-        for member in root.findall('object'):
-            value = (root.find('filename').text,
-                     int(root.find('size')[0].text),
-                     int(root.find('size')[1].text),
-                     member[0].text,
-                     int(member[4][0].text),
-                     int(member[4][1].text),
-                     int(member[4][2].text),
-                     int(member[4][3].text)
-                     )
-            xml_list.append(value)
-    column_name = ['filename', 'width', 'height',
-                   'class', 'xmin', 'ymin', 'xmax', 'ymax']
-    xml_df = pd.DataFrame(xml_list, columns=column_name)
-    return xml_df
+flags = tf.app.flags
+flags.DEFINE_string('csv_input', '', '/content/labels/labels.csv')
+flags.DEFINE_string('image_dir', '', '/content/Sewage Defect Detection.v1i.voc/Images/')
+flags.DEFINE_string('output_path', '', '/content/')
+FLAGS = flags.FLAGS
 
 
 def class_text_to_int(row_label):
-    return label_map_dict[row_label]
+    # Modify this function based on your label names
+    if row_label == 'Buckling':
+        return 1
+    elif row_label == 'Crack':
+        return 2
+    elif row_label == 'Debris':
+        return 3
+    elif row_label == 'Hole':
+        return 4
+    elif row_label == 'Joint offset':
+        return 5
+    elif row_label == 'Obstacle':
+        return 6
+    elif row_label == 'Utility intrusion':
+        return 7
+    else:
+        return None
+
+        None
 
 
 def split(df, group):
@@ -85,7 +64,7 @@ def create_tf_example(group, path):
     width, height = image.size
 
     filename = group.filename.encode('utf8')
-    image_format = b'jpg'
+    image_format = b'png'
     xmins = []
     xmaxs = []
     ymins = []
@@ -119,19 +98,17 @@ def create_tf_example(group, path):
 
 
 def main(_):
-
-    writer = tf.python_io.TFRecordWriter(args.output_path)
-    path = os.path.join(args.image_dir)
-    examples = xml_to_csv(args.xml_dir)
+    writer = tf.python_io.TFRecordWriter(FLAGS.output_path)
+    path = os.path.join(os.getcwd(), FLAGS.image_dir)
+    examples = pd.read_csv(FLAGS.csv_input)
     grouped = split(examples, 'filename')
     for group in grouped:
         tf_example = create_tf_example(group, path)
         writer.write(tf_example.SerializeToString())
+
     writer.close()
-    print('Successfully created the TFRecord file: {}'.format(args.output_path))
-    if args.csv_path is not None:
-        examples.to_csv(args.csv_path, index=None)
-        print('Successfully created the CSV file: {}'.format(args.csv_path))
+    output_path = os.path.join(os.getcwd(), FLAGS.output_path)
+    print('Successfully created the TFRecords: {}'.format(output_path))
 
 
 if __name__ == '__main__':
