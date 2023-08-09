@@ -33,7 +33,15 @@ CONFIG_PATH = MODEL_PATH+'/ssd_mobnet_320/pipeline.config'
 CHECKPOINT_PATH = MODEL_PATH+'/ssd_mobnet_320/'
 
 # Label Map
-labels = [{'name':'single', 'id':1}, {'name':'double', 'id':2}, {'name':'pinch', 'id':3}]
+labels = [
+    {'name': 'Buckling', 'id': 1},
+    {'name': 'Crack', 'id': 2},
+    {'name': 'Debris', 'id': 3},
+    {'name': 'Hole', 'id': 4},
+    {'name': 'Joint offset', 'id': 5},
+    {'name': 'Obstacle', 'id': 6},
+    {'name': 'Utility intrusion', 'id': 7}
+]
 
 with open(ANNOTATION_PATH + '/label_map.pbtxt', 'w') as f:
     for label in labels:
@@ -57,7 +65,7 @@ with tf.io.gfile.GFile(CONFIG_PATH, "r") as f:
     proto_str = f.read()                                                                                                                                                                                                                                       
     text_format.Merge(proto_str, pipeline_config)  
 
-pipeline_config.model.ssd.num_classes = 3
+pipeline_config.model.ssd.num_classes = 7
 pipeline_config.train_config.batch_size = 4
 pipeline_config.train_config.fine_tune_checkpoint = PRETRAINED_MODEL_PATH+args.pretrained_ckpt
 pipeline_config.train_config.fine_tune_checkpoint_type = "detection"
